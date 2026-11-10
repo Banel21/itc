@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ICT Help Desk & Asset Register (Demo)</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b2430;--mu:#5d6b7c;--bd:#d9dee5;--ac:#1f6feb;--acx:#fff;--ok:#1a7f45;--wa:#b26a00;--er:#c62828;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10151c;--card:#18202a;--tx:#e6ebf1;--mu:#93a1b3;--bd:#2b3644;--ac:#5aa2ff;--acx:#0b1220;--ok:#4cc38a;--wa:#e5a64a;--er:#ff7b72}}
+:root[data-theme="dark"]{--bg:#10151c;--card:#18202a;--tx:#e6ebf1;--mu:#93a1b3;--bd:#2b3644;--ac:#5aa2ff;--acx:#0b1220;--ok:#4cc38a;--wa:#e5a64a;--er:#ff7b72}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:0 0 2px}h2{font-size:17px;margin:0 0 10px}
+.sub{color:var(--mu);margin:0 0 14px}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+nav button{background:var(--card);color:var(--tx);border:1px solid var(--bd);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
+nav button[aria-selected="true"]{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+label{display:block;font-size:13px;color:var(--mu);margin-bottom:3px}
+input,select{width:100%;padding:8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--tx);font:inherit}
+.btn{background:var(--ac);color:var(--acx);border:0;padding:9px 16px;border-radius:8px;cursor:pointer;font:inherit;margin-top:10px}
+.btn.alt{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--bd);vertical-align:middle}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mu)}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;border:1px solid var(--bd)}
+.High,.Faulty{color:var(--er)}.Medium,.Repair{color:var(--wa)}.Low,.Active{color:var(--ok)}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.stat{flex:1;min-width:110px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px}
+.stat b{font-size:22px;display:block}
+details{border-bottom:1px solid var(--bd);padding:8px 0}summary{cursor:pointer;font-weight:600}
+ol,ul{margin:6px 0 6px 20px;padding:0}
+code{background:var(--bg);border:1px solid var(--bd);padding:0 5px;border-radius:4px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.row>div{flex:1;min-width:150px}
+</style>
+</head>
+<body>
+<main>
+<h1>ICT Help Desk & Asset Register</h1>
+<p class="sub">A small demo for campus IT support. All data is fictional and stays in your browser.</p>
+<nav role="tablist" id="tabs"></nav>
+<section id="view"></section>
+</main>
+<script>
+var CATS=["Hardware","Software","Network","Printing","Account/Access"],PRI=["Low","Medium","High"],STA=["Open","In Progress","Resolved"];
+var AST=["Active","In Repair","Faulty","In Storage"],TYPES=["Laptop","PC","Monitor","Printer"];
+var SEED={tickets:[
+{id:"HD-1001",title:"Lab PC will not boot",who:"Lecturer A (fictional)",cat:"Hardware",pri:"High",st:"Open",asset:"AST-0002"},
+{id:"HD-1002",title:"Cannot connect to campus Wi-Fi",who:"Student B (fictional)",cat:"Network",pri:"Medium",st:"In Progress",asset:""},
+{id:"HD-1003",title:"Printer shows paper jam",who:"Admin C (fictional)",cat:"Printing",pri:"Low",st:"Resolved",asset:"AST-0004"}],
+assets:[
+{no:"AST-0001",type:"Laptop",model:"Demo Laptop 14",loc:"Library",st:"Active"},
+{no:"AST-0002",type:"PC",model:"Demo Desktop Tower",loc:"Lab 2",st:"Faulty"},
+{no:"AST-0003",type:"Monitor",model:"Demo 24-inch Display",loc:"Lab 2",st:"Active"},
+{no:"AST-0004",type:"Printer",model:"Demo Laser Printer",loc:"Admin Office",st:"In Repair"},
+{no:"AST-0005",type:"Laptop",model:"Demo Laptop 15",loc:"Storeroom",st:"In Storage"}]};
+var S,tab="Help Desk",fT="All",q="",fA="All";
+try{S=JSON.parse(localStorage.getItem("ict-demo"))}catch(e){S=null}
+if(!S||!S.tickets||!S.assets){S=JSON.parse(JSON.stringify(SEED))}
+function save(){try{localStorage.setItem("ict-demo",JSON.stringify(S))}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function opts(a,sel){return a.map(function(x){return "<option"+(x===sel?" selected":"")+">"+esc(x)+"</option>"}).join("")}
+function $(id){return document.getElementById(id)}
+var TABS=["Help Desk","Asset Register","Troubleshooting","How it works"];
+function drawTabs(){$("tabs").innerHTML=TABS.map(function(t){return '<button role="tab" aria-selected="'+(t===tab)+'" data-t="'+t+'">'+t+"</button>"}).join("")}
+$("tabs").onclick=function(e){var t=e.target.getAttribute("data-t");if(t){tab=t;render()}};
+function nextId(list,key,p,start){var n=start;list.forEach(function(x){var v=parseInt(String(x[key]).split("-")[1],10);if(v>=n)n=v+1});return p+"-"+String(n).padStart(p==="AST"?4:4,"0")}
+function render(){drawTabs();var v=$("view");
+if(tab==="Help Desk")v.innerHTML=desk();else if(tab==="Asset Register")v.innerHTML=assets();else if(tab==="Troubleshooting")v.innerHTML=guide();else v.innerHTML=about();
+if(tab==="Help Desk")bindDesk();if(tab==="Asset Register")bindAssets();if(tab==="How it works")bindAbout()}
+function desk(){var c=function(s){return S.tickets.filter(function(t){return t.st===s}).length};
+var rows=S.tickets.filter(function(t){return fT==="All"||t.st===fT}).map(function(t){
+return "<tr><td>"+t.id+"</td><td>"+esc(t.title)+"<br><small>"+esc(t.who)+(t.asset?" · "+esc(t.asset):"")+"</small></td><td>"+esc(t.cat)+'</td><td><span class="tag '+t.pri+'">'+t.pri+'</span></td><td><select data-id="'+t.id+'" class="stsel">'+opts(STA,t.st)+"</select></td></tr>"}).join("");
+return '<div class="stats"><div class="stat"><b>'+c("Open")+'</b>Open</div><div class="stat"><b>'+c("In Progress")+'</b>In progress</div><div class="stat"><b>'+c("Resolved")+"</b>Resolved</div></div>"+
+'<div class="card"><h2>Log a support request</h2><div class="grid"><div><label for="tt">Issue</label><input id="tt" placeholder="e.g. Projector not detected"></div><div><label for="tw">Requester</label><input id="tw" placeholder="Fictional name"></div><div><label for="tc">Category</label><select id="tc">'+opts(CATS)+'</select></div><div><label for="tp">Priority</label><select id="tp">'+opts(PRI,"Medium")+'</select></div><div><label for="ta">Linked asset (optional)</label><select id="ta"><option value="">None</option>'+S.assets.map(function(a){return "<option>"+a.no+"</option>"}).join("")+'</select></div></div><button class="btn" id="addT">Log request</button></div>'+
+'<div class="card"><div class="row"><div><h2>Requests</h2></div><div style="max-width:200px"><label for="ft">Filter by status</label><select id="ft">'+opts(["All"].concat(STA),fT)+'</select></div></div><div class="scroll"><table><thead><tr><th>ID</th><th>Issue</th><th>Category</th><th>Priority</th><th>Status</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5">No requests match.</td></tr>')+"</tbody></table></div></div>"}
+function bindDesk(){$("addT").onclick=function(){var t=$("tt").value.trim();if(!t){$("tt").focus();return}
+S.tickets.unshift({id:nextId(S.tickets,"id","HD",1001),title:t,who:$("tw").value.trim()||"Unnamed (fictional)",cat:$("tc").value,pri:$("tp").value,st:"Open",asset:$("ta").value});save();render()};
+$("ft").onchange=function(){fT=this.value;render()};
+Array.prototype.forEach.call(document.querySelectorAll(".stsel"),function(s){s.onchange=function(){S.tickets.forEach(function(t){if(t.id===s.getAttribute("data-id"))t.st=s.value});save();render()}})}
+function assets(){var ql=q.toLowerCase();
+var list=S.assets.filter(function(a){return(fA==="All"||a.st===fA)&&(!ql||(a.no+" "+a.loc+" "+a.st).toLowerCase().indexOf(ql)>-1)});
+var rows=list.map(function(a){return "<tr><td>"+a.no+"</td><td>"+esc(a.type)+"</td><td>"+esc(a.model)+"</td><td>"+esc(a.loc)+'</td><td><select class="asel" data-no="'+a.no+'">'+opts(AST,a.st)+"</select></td></tr>"}).join("");
+return '<div class="card"><h2>Search equipment</h2><div class="grid"><div><label for="q">Asset number, location or status</label><input id="q" value="'+esc(q)+'" placeholder="e.g. Lab 2, AST-0003, Faulty"></div><div><label for="fa">Status</label><select id="fa">'+opts(["All"].concat(AST),fA)+"</select></div></div></div>"+
+'<div class="card"><h2>Equipment ('+list.length+')</h2><div class="scroll"><table><thead><tr><th>Asset no.</th><th>Type</th><th>Model</th><th>Location</th><th>Status</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5">No equipment found.</td></tr>')+"</tbody></table></div></div>"+
+'<div class="card"><h2>Add equipment</h2><div class="grid"><div><label for="nt">Type</label><select id="nt">'+opts(TYPES)+'</select></div><div><label for="nm">Model</label><input id="nm" placeholder="Fictional model"></div><div><label for="nl">Location</label><input id="nl" placeholder="e.g. Lab 1"></div></div><button class="btn" id="addA">Add to register</button></div>'}
+function bindAssets(){$("q").oninput=function(){q=this.value;var p=this.selectionStart;render();var e=$("q");e.focus();e.setSelectionRange(p,p)};
+$("fa").onchange=function(){fA=this.value;render()};
+$("addA").onclick=function(){var m=$("nm").value.trim(),l=$("nl").value.trim();if(!m||!l){(m?$("nl"):$("nm")).focus();return}
+S.assets.push({no:nextId(S.assets,"no","AST",1),type:$("nt").value,model:m,loc:l,st:"Active"});save();render()};
+Array.prototype.forEach.call(document.querySelectorAll(".asel"),function(s){s.onchange=function(){S.assets.forEach(function(a){if(a.no===s.getAttribute("data-no"))a.st=s.value});save();render()}})}
+var G=[["Computer will not start",["Check the power cable and wall socket.","Hold the power button for 10 seconds, then try again.","Listen for beeps or look for LED codes and note them.","Test with a known-good cable or power supply.","If it still fails, log a Hardware ticket with the asset number."]],
+["No internet or Wi-Fi",["Confirm Wi-Fi is on and airplane mode is off.","Forget the network and reconnect.","Check whether other devices in the room are affected.","Restart the device, then check the cable and port if wired.","Escalate to Network if several users are affected."]],
+["Printer not printing",["Check paper, toner and any error message on the panel.","Clear the print queue and restart the printer.","Confirm the right printer is selected.","Reinstall the driver if the printer shows offline.","Log a Printing ticket if the fault repeats."]],
+["Forgot password or locked account",["Verify the user’s identity using the campus procedure.","Reset the password through the admin console.","Require a change at next sign-in.","Record the action in the ticket and close it."]],
+["Slow computer",["Restart the machine.","Check free disk space and startup programs.","Run updates and a malware scan.","Consider a hardware check or replacement if it stays slow."]]];
+function guide(){return '<div class="card"><h2>Troubleshooting guide</h2>'+G.map(function(g){return "<details><summary>"+g[0]+"</summary><ol>"+g[1].map(function(s){return "<li>"+s+"</li>"}).join("")+"</ol></details>"}).join("")+"</div>"}
+function about(){return '<div class="card"><h2>How the demo works</h2><p>Support requests and equipment live in one JavaScript object that is saved to your browser’s local storage, so changes survive a refresh. Each request has a category, a priority and a status that moves from Open to In Progress to Resolved, and it can be linked to an asset number. The register can be searched by asset number, location or status. Nothing is sent to a server.</p><button class="btn alt" id="reset">Reset demo data</button></div>'+
+'<div class="card"><h2>Tools used</h2><ul><li>HTML, CSS and vanilla JavaScript (no frameworks)</li><li>Browser local storage for persistence</li><li>Git and GitHub for version control (add your repository link here)</li></ul></div>'+
+'<div class="card"><h2>Setup</h2><ol><li>Download <code>ict-helpdesk-demo.html</code>.</li><li>Open it in any modern browser. No install or server is needed.</li><li>Optional: place it in a GitHub repository and enable GitHub Pages to host it.</li></ol></div>'+
+'<div class="card"><h2>Skills shown</h2><ul><li>Ticket logging, categorising, prioritising and status tracking</li><li>Asset records and search by asset number, location and status</li><li>Writing clear first-line troubleshooting steps</li><li>Basic data handling and documentation</li></ul></div>'}
+function bindAbout(){$("reset").onclick=function(){S=JSON.parse(JSON.stringify(SEED));save();fT="All";q="";fA="All";render()}}
+render();
+</script>
+</body>
+</html>
